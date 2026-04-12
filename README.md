@@ -1,3 +1,13 @@
+<h1 align="center">Chaos Double Pendulum Simulator</h1>
+
+<p align="center">
+---English---
+</p>
+
+<p align="center">
+<img src="Double-Pendulum-Simulator.png" width="1080">
+</p>
+
 # Chaos Double Pendulum Simulator
 
 ⚠️ This project is currently in beta.
@@ -33,6 +43,16 @@ This simulation is based on the physics of a double pendulum system, which is a 
 - May contain bugs
 
 ---
+
+<h1 align="center">Chaos Double Pendulum Simulator</h1>
+
+<p align="center">
+---日本語---
+</p>
+
+<p align="center">
+<img src="Double-Pendulum-Simulator.png" width="1080">
+</p>
 
 # Chaos Double Pendulum Simulator
 
