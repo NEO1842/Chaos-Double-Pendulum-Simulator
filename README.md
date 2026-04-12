@@ -1,4 +1,4 @@
-# Double Pendulum Simulator
+# Chaos Double Pendulum Simulator
 
 ⚠️ This project is currently in beta.
 
@@ -34,7 +34,7 @@ This simulation is based on the physics of a double pendulum system, which is a 
 
 ---
 
-# Double Pendulum Simulator
+# Chaos Double Pendulum Simulator
 
 ⚠️このプロジェクトは現在ベータ版です
 
