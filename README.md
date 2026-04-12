@@ -18,6 +18,12 @@ This system demonstrates chaotic motion, where small differences in initial cond
 2. Extract the ZIP file
 3. Open `index.html` in your browser
 
+## Project Structure
+The source code is organized into the following modules:
+- `/physics/`: Core physics engine, dynamics, and trail logic.
+- `/ui/`: User interface components and parameter controls.
+- `/hue/`: Color management and glow effects.
+
 ## Technical Details
 This simulation is based on the physics of a double pendulum system, which is a classic example of a nonlinear dynamical system.
 
@@ -45,6 +51,13 @@ This simulation is based on the physics of a double pendulum system, which is a 
 2. 解凍
 
 3. `index.html` をブラウザで開く
+
+# プロジェクト構成
+コードは以下のフォルダに整理されています：
+
+- `/physics/`: 物理演算エンジン、力学、および軌跡のロジック。
+- `/ui/`: ユーザーインターフェースコンポーネントとパラメータ制御。
+- `/hue/`: 色管理と発光エフェクト。
 
 # 技術的な詳細 
 
