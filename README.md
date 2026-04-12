@@ -1,14 +1,17 @@
 <h1 align="center">Chaos Double Pendulum Simulator</h1>
 
 <p align="center">
+🌐 Live Demo:<br>
+https://NEO1842.github.io/Chaos-Double-Pendulum-Simulator/
+</p>
+
+<p align="center">
 ---English---
 </p>
 
 <p align="center">
 <img src="Double-Pendulum-Simulator.png" width="1080">
 </p>
-
-# Chaos Double Pendulum Simulator
 
 ⚠️ This project is currently in beta.
 
@@ -47,14 +50,17 @@ This simulation is based on the physics of a double pendulum system, which is a 
 <h1 align="center">Chaos Double Pendulum Simulator</h1>
 
 <p align="center">
+🌐 デモはこちら:<br>
+https://NEO1842.github.io/Chaos-Double-Pendulum-Simulator/
+</p>
+
+<p align="center">
 ---日本語---
 </p>
 
 <p align="center">
 <img src="Double-Pendulum-Simulator.png" width="1080">
 </p>
-
-# Chaos Double Pendulum Simulator
 
 ⚠️このプロジェクトは現在ベータ版です
 
