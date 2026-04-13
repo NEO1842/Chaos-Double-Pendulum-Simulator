@@ -4,8 +4,8 @@
  */
 function getEnabledTrailStyle(i, lastIndex, isMonochrome) {
   const ageRatio = i / lastIndex;
-  const fade = Math.pow(ageRatio, 1.45);
-  const alpha = isMonochrome ? 0.03 + fade * 0.75 : 0.04 + fade * 0.9;
-  const lineScale = 0.65 + fade * 0.55;
+  const fade = Math.pow(ageRatio, 1.6);
+  const alpha = fade * (isMonochrome ? 0.8 : 0.95);
+  const lineScale = 0.1 + fade * 1.1;
   return { alpha, lineScale };
 }

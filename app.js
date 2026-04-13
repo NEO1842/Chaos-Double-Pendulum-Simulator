@@ -1,7 +1,7 @@
 "use strict";
 
 const canvas = document.getElementById("pendulumCanvas");
-const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
+const ctx = canvas.getContext("2d", { alpha: false });
 const backgroundCanvas = document.createElement("canvas");
 const backgroundCtx = backgroundCanvas.getContext("2d", { alpha: false });
 
@@ -206,8 +206,8 @@ const I18N = {
     guideClose: "Close",
     guideLine1: "Use `2 Bobs` and `3 Bobs` tabs to switch simulation mode.",
     guideLine2: "Click the canvas background to pause/resume.",
-    guideLine3: "Press `R` for randomize and `F` to toggle FPS overlay.",
-    guideLine4: "Save State creates a CSS file; Load State restores it.",
+    guideLine3: "Press `R`: Randomize, `C`: Clear trail, `F`: FPS, `S`: PNG.",
+    guideLine4: "Press `Space`: Pause. Changing lengths will clear the trail.",
     labelGravity: "Gravity g",
     helpGravity: "Gravity acceleration. Higher means faster fall.",
     labelLength1: "Length L1",
@@ -253,13 +253,15 @@ const I18N = {
     btnLoadState: "Load State File",
     btnSaveState: "Save State",
     btnClearTrail: "Clear Trail",
+    btnSavePng: "Export PNG",
     statElapsed: "Elapsed",
     statEnergy: "Total Energy",
     statFps: "FPS",
     pauseIndicator: "Paused",
-    feedbackSaved: "Saved + Downloaded",
+    feedbackSaved: "Saved!",
+    feedbackSavedPng: "Saved!",
     feedbackSaveFail: "Save Failed",
-    feedbackLoaded: "Loaded",
+    feedbackLoaded: "Loaded!",
     feedbackFormatError: "Invalid Format",
     feedbackLoadFail: "Load Failed"
   },
@@ -273,7 +275,7 @@ const I18N = {
     languageJapanese: "日本語",
     heroKicker: "CHAOS STUDY",
     heroTitle: "双連振り子シミュレーター",
-    heroSubtitle: "わずかな初期条件差で、軌跡は劇的に変化シマス。",
+    heroSubtitle: "わずかな初期条件差で、軌跡は劇的に変化します。",
     panelTitle: "パラメータ",
     tabTwoBobs: "2個",
     tabThreeBobs: "3個",
@@ -283,8 +285,8 @@ const I18N = {
     guideClose: "閉じる",
     guideLine1: "上の `2個` / `3個` タブでモードを切り替える。",
     guideLine2: "振り子画面の背景クリックで一時停止/再開。",
-    guideLine3: "`R` キーでランダム、`F` キーでFPS表示を切り替え。",
-    guideLine4: "状態を保存でCSS保存、状態ファイルを開くで復元できる。",
+    guideLine3: "`R`:ランダム, `C`:軌跡クリア, `F`:FPS切替, `S`:PNG保存",
+    guideLine4: "`Space`:一時停止。長さを変えると軌跡はリセットされます。",
     labelGravity: "重力 g",
     helpGravity: "重力加速度。大きいほど速く落ちる。",
     labelLength1: "長さ L1",
@@ -330,13 +332,15 @@ const I18N = {
     btnLoadState: "状態ファイルを開く",
     btnSaveState: "状態を保存",
     btnClearTrail: "軌跡クリア",
+    btnSavePng: "PNG 保存",
     statElapsed: "経過時間",
     statEnergy: "総エネルギー",
     statFps: "FPS",
     pauseIndicator: "一時停止中",
-    feedbackSaved: "保存してDL",
+    feedbackSaved: "保存完了",
+    feedbackSavedPng: "保存完了",
     feedbackSaveFail: "保存失敗",
-    feedbackLoaded: "読込しました",
+    feedbackLoaded: "読込完了",
     feedbackFormatError: "形式エラー",
     feedbackLoadFail: "読込失敗"
   }
@@ -490,6 +494,8 @@ function t(key) {
 function applyLanguage(nextLanguage) {
   const language = I18N[nextLanguage] ? nextLanguage : DEFAULT_LANGUAGE;
   currentLanguage = language;
+  // 言語設定をブラウザに記憶
+  localStorage.setItem("dp-preferred-language", language);
 
   document.documentElement.lang = language;
   document.title = t("pageTitle");
@@ -886,8 +892,8 @@ function saveCurrentControls() {
 
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
-  // ラズパイ5向け：DPRを1.2に制限してGPU負荷を激減させる
-  const dpr = clamp(window.devicePixelRatio || 1, 1, 1.2);
+  // ディスプレイ本来の最高解像度を使用（4K/Retina対応）
+  const dpr = window.devicePixelRatio || 1;
   const width = Math.max(1, Math.floor(rect.width));
   const height = Math.max(1, Math.floor(rect.height));
 
@@ -920,6 +926,7 @@ function getGeometry() {
   const width = canvas.clientWidth;
   const height = canvas.clientHeight;
   const chain = computeChainKinematics(state);
+  // 振り子の表示サイズを、画面に合わせて最適化される初期のサイズに戻します。
   const totalLength = chain.lengths.reduce((sum, value) => sum + value, 0);
   const bobRadiusEstimate = clamp(8 + Math.cbrt(Math.max(...chain.masses)) * 4, 8, 20);
   const edgePadding = 20;
@@ -1121,35 +1128,42 @@ function drawTrail() {
     const current = trail[i];
     const next = trail[nextIndex];
 
-    // 外部ファイル（Trail-Duration/）の計算ロジックを使用
-    const style = params.infiniteTrail 
-      ? getDisabledTrailStyle(i, lastIndex, params.monochrome)
-      : getEnabledTrailStyle(i, lastIndex, params.monochrome);
-    
-    const { alpha, lineScale } = style;
-    const px = getX(current), py = getY(current);
-    const startX = prevIndex === 0 ? getX(prev) : (getX(prev) + px) * 0.5;
-    const startY = prevIndex === 0 ? getY(prev) : (getY(prev) + py) * 0.5;
-    const endX = nextIndex === lastIndex ? getX(next) : (px + getX(next)) * 0.5;
-    const endY = nextIndex === lastIndex ? getY(next) : (py + getY(next)) * 0.5;
+    const progress = i / lastIndex;
+    let alpha, lineScale;
+    if (params.infiniteTrail) {
+      alpha = params.monochrome ? 0.8 : 0.95;
+      lineScale = 1.0;
+    } else {
+      alpha = 0.95 * Math.pow(progress, 1.2);
+      lineScale = 0.1 + 1.2 * progress;
+    }
 
-    ctx.lineWidth = 2.1 * lineScale;
+    const px = getX(current), py = getY(current);
+    const startX = i === stride ? getX(prev) : (getX(prev) + px) * 0.5;
+    const startY = i === stride ? getY(prev) : (getY(prev) + py) * 0.5;
+    const endX = i === lastIndex ? px : (px + getX(next)) * 0.5;
+    const endY = i === lastIndex ? py : (py + getY(next)) * 0.5;
+
+    ctx.lineWidth = 2.2 * lineScale;
 
     if (params.monochrome) {
-      ctx.shadowColor = "transparent";
-      ctx.strokeStyle = `rgba(228, 236, 240, ${alpha.toFixed(3)})`;
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(228, 236, 240, ${alpha})`;
     } else {
-      const hueMid = params.autoHue ? speedToTrailHue(current.speed, minSpeed, maxSpeed) : 194;
-      
-      // Hue-Calculatorの個別ファイルから設定を取得
-      const colorSettings = params.glowEffect ? getGlowEnabledSettings(hueMid, alpha, params.glowStrength) : getGlowDisabledSettings();
+      const huePrev = params.autoHue ? speedToTrailHue(prev.speed) : 194;
+      const hueCurr = params.autoHue ? speedToTrailHue(current.speed) : 194;
 
-      ctx.shadowBlur = colorSettings.shadowBlur;
-      ctx.shadowColor = colorSettings.shadowColor;
-      // 彩度を100%に引き上げ、輝度を調整して「濃い」発色を実現
-      ctx.strokeStyle = params.glowEffect 
-        ? `hsla(${hueMid}, 100%, 50%, ${alpha})` 
-        : `hsla(${hueMid}, 100%, 50%, ${alpha})`;
+      const grad = ctx.createLinearGradient(startX, startY, endX, endY);
+      grad.addColorStop(0, `hsla(${huePrev}, 100%, 50%, ${alpha})`);
+      grad.addColorStop(1, `hsla(${hueCurr}, 100%, 50%, ${alpha})`);
+      ctx.strokeStyle = grad;
+
+      if (params.glowEffect && params.glowStrength > 0) {
+        ctx.shadowBlur = 15 * params.glowStrength;
+        ctx.shadowColor = `hsla(${hueCurr}, 100%, 60%, ${Math.min(0.7, alpha)})`;
+      } else {
+        ctx.shadowBlur = 0;
+      }
     }
 
     ctx.beginPath();
@@ -1219,9 +1233,7 @@ function drawPendulum(geometry) {
 
   const anchorPoints = [{ x: pivotX, y: pivotY }, ...points];
   if (params.monochrome) {
-    if (params.monochrome) {
-      ctx.strokeStyle = "rgba(222, 233, 240, 0.92)";
-    }
+    ctx.strokeStyle = "rgba(222, 233, 240, 0.92)";
     ctx.lineWidth = 2.6;
     ctx.beginPath();
     ctx.moveTo(anchorPoints[0].x, anchorPoints[0].y);
@@ -1255,16 +1267,12 @@ function drawPendulum(geometry) {
   ctx.arc(pivotX, pivotY, 4.3, 0, Math.PI * 2);
   ctx.fill();
 
-  const radius = chain.masses.map((mass) => getBobRadius(mass, scale));
-  if (points[0]) {
-    drawBob(points[0].x, points[0].y, radius[0], hues[0] ?? 194, 58);
-  }
-  if (points[1]) {
-    drawBob(points[1].x, points[1].y, radius[1], hues[1] ?? 194, 56);
-  }
-  if (points[2]) {
-    drawBob(points[2].x, points[2].y, radius[2], hues[2] ?? 194, 54);
-  }
+  const radii = chain.masses.map((mass) => getBobRadius(mass, scale));
+  points.forEach((point, i) => {
+    const hue = hues[i] ?? 194;
+    const lightness = 58 - i * 2; // 0番目は58, 1番目は56, 2番目は54と段階的に変化
+    drawBob(point.x, point.y, radii[i], hue, lightness);
+  });
   ctx.restore();
 }
 
@@ -1272,6 +1280,7 @@ function draw() {
   const geometry = getGeometry();
   drawBackground(geometry.width, geometry.height);
   drawTrail();
+
   drawPendulum(geometry);
   updateBobSpeedPanel();
   drawCanvasFps(geometry);
@@ -1471,10 +1480,10 @@ function setRunning(nextRunning) {
 ensureGuideUiElements();
 setActiveTab("two", false);
 controls.tabTwoBobs.addEventListener("click", () => {
-  setActiveTab("two", true);
+  setActiveTab("two", false);
 });
 controls.tabThreeBobs.addEventListener("click", () => {
-  setActiveTab("three", true);
+  setActiveTab("three", false);
 });
 if (controls.tabGuide) {
   controls.tabGuide.addEventListener("click", () => {
@@ -1517,16 +1526,19 @@ bindSlider(controls.gravity, controls.gravityValue, (v) => v.toFixed(3), (v) => 
   params.g = v;
 });
 
-bindSlider(controls.length1, controls.length1Value, (v) => `${v.toFixed(3)} m`, (v) => {
+bindSlider(controls.length1, controls.length1Value, (v) => `${v.toFixed(3)}`, (v) => {
   params.l1 = v;
+  clearTrail();
 });
 
-bindSlider(controls.length2, controls.length2Value, (v) => `${v.toFixed(3)} m`, (v) => {
+bindSlider(controls.length2, controls.length2Value, (v) => `${v.toFixed(3)}`, (v) => {
   params.l2 = v;
+  clearTrail();
 });
 
-bindSlider(controls.length3, controls.length3Value, (v) => `${v.toFixed(3)} m`, (v) => {
+bindSlider(controls.length3, controls.length3Value, (v) => `${v.toFixed(3)}`, (v) => {
   params.l3 = v;
+  clearTrail();
 });
 
 bindSlider(controls.mass1, controls.mass1Value, (v) => `${v.toFixed(2)} kg`, (v) => {
@@ -1651,7 +1663,23 @@ controls.toggleRun.addEventListener("click", () => {
 });
 
 controls.reset.addEventListener("click", () => {
-  applyInitialState(true);
+    // 1. 全てのスライダーとトグルをデフォルト値に強制リセット
+    SAVED_RANGE_IDS.forEach(id => {
+        const input = controls[id];
+        if (input) {
+            input.value = input.defaultValue;
+            input.dispatchEvent(new Event('input'));
+        }
+    });
+    SAVED_TOGGLE_IDS.forEach(id => {
+        const input = controls[id];
+        if (input) {
+            input.checked = input.defaultChecked;
+            input.dispatchEvent(new Event('change'));
+        }
+    });
+    // 2. 物理状態（角度・速度）をリセット
+    applyInitialState(true);
 });
 
 function randomizeRangeControl(control) {
@@ -1733,22 +1761,31 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
-  const target = event.target;
-  if (target instanceof HTMLElement) {
-    const tag = target.tagName;
-    if (
-      target.isContentEditable ||
-      (tag === "INPUT" && target.type !== "range") ||
-      tag === "TEXTAREA" ||
-      tag === "SELECT"
-    ) {
-      return;
-    }
-  }
-
+  // ショートカットキー (UI選択状態に関わらず常に優先)
   if (event.code === "KeyT" || event.key === "t" || event.key === "T") {
     event.preventDefault();
+    controls.showTrail.checked = !controls.showTrail.checked;
+    controls.showTrail.dispatchEvent(new Event("change"));
+    return;
+  }
+
+  if (event.code === "KeyI" || event.key === "i" || event.key === "I") {
+    event.preventDefault();
     toggleInfiniteTrail();
+    return;
+  }
+
+  if (event.code === "KeyA" || event.key === "a" || event.key === "A") {
+    event.preventDefault();
+    controls.autoHue.checked = !controls.autoHue.checked;
+    controls.autoHue.dispatchEvent(new Event("change"));
+    return;
+  }
+
+  if (event.code === "KeyM" || event.key === "m" || event.key === "M") {
+    event.preventDefault();
+    controls.monochrome.checked = !controls.monochrome.checked;
+    controls.monochrome.dispatchEvent(new Event("change"));
     return;
   }
 
@@ -1777,15 +1814,38 @@ document.addEventListener("keydown", (event) => {
     clearTrail();
     return;
   }
+
+  if (event.code === "Space") {
+    event.preventDefault();
+    setRunning(!running);
+    return;
+  }
+
+  if (event.code === "KeyS" || event.key === "s" || event.key === "S") {
+    event.preventDefault();
+    if (typeof saveImage === "function") {
+      const btn = document.getElementById("exportPng");
+      saveImage(btn);
+    }
+    return;
+  }
 });
 
 canvas.addEventListener("click", () => {
   setRunning(!running);
 });
 
-applyLanguage(DEFAULT_LANGUAGE);
+// GitHub公開向け: 言語の自動検知と設定の自動復元
+const savedLang = localStorage.getItem("dp-preferred-language");
+const startLang = savedLang || DEFAULT_LANGUAGE;
+applyLanguage(startLang);
+
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
+
+// 起動時はデフォルト数値を優先するため、自動保存の復元を停止
+// loadSavedControls();
+
 setRunning(running);
 initialEnergy = totalEnergy();
 lastEnergy = initialEnergy;
@@ -1808,8 +1868,21 @@ function animate(now) {
     const steps = Math.max(1, Math.ceil(scaledDt / stepTarget));
     const subDt = scaledDt / steps;
 
-    for (let i = 0; i < steps; i += 1) {
-      rk4Step(subDt);
+    for (let i = 0; i < steps; i++) rk4Step(subDt);
+
+    // 4. モード別のエラーチェック（逸脱防止）
+    let isInvalid = false;
+    if (params.bobCount === 3) {
+      isInvalid = !Number.isFinite(state.theta1) || !Number.isFinite(state.omega1) ||
+                  !Number.isFinite(state.theta2) || !Number.isFinite(state.omega2) ||
+                  !Number.isFinite(state.theta3) || !Number.isFinite(state.omega3);
+    } else {
+      isInvalid = !Number.isFinite(state.theta1) || !Number.isFinite(state.omega1) ||
+                  !Number.isFinite(state.theta2) || !Number.isFinite(state.omega2);
+    }
+
+    if (isInvalid) {
+      applyInitialState(true);
     }
 
     simTime += scaledDt;

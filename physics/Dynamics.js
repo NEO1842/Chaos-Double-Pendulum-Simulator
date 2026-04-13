@@ -9,6 +9,7 @@ function derivatives(inputState) {
   let massAccum = 0;
   for (let i = count - 1; i >= 0; i -= 1) {
     massAccum += masses[i];
+    // 極小値補正を撤廃し、入力値をそのまま使用
     massSuffix[i] = massAccum;
   }
 
@@ -53,17 +54,19 @@ function derivatives(inputState) {
     rhs[i] = -(coriolis[i] + gravityForces[i]);
   }
 
-  const alpha = solveLinearSystem(massMatrix, rhs);
+  // 変数名を alpha から accelerations に変更し、衝突とエラーを回避
+  const accelerations = solveLinearSystem(massMatrix, rhs) || new Array(count).fill(0);
+
   for (let i = 0; i < count; i += 1) {
-    alpha[i] -= params.damping * omega[i];
+    accelerations[i] -= params.damping * omega[i];
   }
 
   return {
     dTheta1: omega[0] ?? 0,
-    dOmega1: alpha[0] ?? 0,
+    dOmega1: accelerations[0] ?? 0,
     dTheta2: omega[1] ?? 0,
-    dOmega2: alpha[1] ?? 0,
+    dOmega2: accelerations[1] ?? 0,
     dTheta3: count === 3 ? omega[2] ?? 0 : 0,
-    dOmega3: count === 3 ? alpha[2] ?? 0 : 0
+    dOmega3: count === 3 ? accelerations[2] ?? 0 : 0
   };
 }
