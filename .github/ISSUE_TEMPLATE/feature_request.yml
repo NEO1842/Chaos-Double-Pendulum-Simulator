@@ -1,0 +1,29 @@
+name: Feature Request
+description: Suggest a new feature for the simulator
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: 💡 Idea
+      description: What do you want to add?
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: 🔥 Why?
+      description: Why is this useful?
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: 🎨 Simulation impact
+      description: How does it affect the pendulum system?
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: ⚡ Notes
