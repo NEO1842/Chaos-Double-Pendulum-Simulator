@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/NEO1842/Chaos-Double-Pendulum-Simulator/discussions
+    about: Ask questions, ideas, or talk about the simulation here.
